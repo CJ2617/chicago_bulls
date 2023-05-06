@@ -1,0 +1,98 @@
+---
+title: "10157_Final"
+author: "Jie Cai"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# Overview
+----------
+
+
+
+
+```{r}
+library(tidyverse)
+library(broom)
+salaries_1819 <- read.csv("2018-19_nba_player-salaries.csv")
+player_1819 <- read.csv("2018-19_nba_player-statistics.csv")
+team1 <- read.csv("2018-19_nba_team-statistics_1.csv")
+team2 <- read.csv("2018-19_nba_team-statistics_2.csv")
+payroll_1920 <- read.csv("2019-20_nba_team-payroll.csv")
+```
+# combine data player and salaries
+```{r}
+player <- left_join(player_1819,salaries_1819)
+levels(as.factor(player$Pos))
+```
+# fina na
+```{r}
+colnames(player)[apply(player, 2, anyNA)]
+colSums(is.na(player))
+#fill na = 0
+player[is.na(player)] <- 0
+```
+
+```{r}
+max(player$G)
+player_tot <- player[grepl('TOT', player$Tm),]
+player2 <- player[!(player$player_id %in% player_tot$player_id),]
+player <- full_join(player2,player_tot)
+```
+
+
+
+# devided into position
+```{r}
+levels(as.factor(player$Pos))
+pg <- player[grepl('PG', player$Pos),]
+sg<- player[grepl('SG', player$Pos),]
+sf<- player[grepl('SF', player$Pos),]
+pf<- player[grepl('PF', player$Pos),]
+cent <- player[grepl('C', player$Pos),]
+```
+# sort 
+```{r}
+cent <- c[order(cent$Age),]
+new_c <- cent%>%subset(select=c("FG.","X3P.","eFG.","FT.","TRB", "AST","STL","BLK","TOV","PF","salary"))
+```
+
+# multilinear, y=salary
+```{r}
+c_fit <- lm(log(salary)~., data=new_c)
+plot(c_fit)
+tidy(c_fit,coef.int=TRUE)
+car::avPlots(c_fit) # test linearity / covaraince
+sqrt(car::vif(c_fit))
+pairs(formula=~FG.+X3P.+eFG.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
+```
+
+# compare with fg + xp3 vs efg
+```{r}
+
+c_fit <- lm(log(salary)~FG.+X3P.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
+tidy(c_fit,coef.int=TRUE)
+car::avPlots(c_fit) # test linearity / covaraince
+car::vif(c_fit)
+sqrt(car::vif(c_fit))
+pairs(formula=~FG.+X3P.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
+summary(c_fit)
+
+c_fit <- lm(log(salary)~eFG.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
+tidy(c_fit,coef.int=TRUE)
+car::avPlots(c_fit) # test linearity / covaraince
+car::vif(c_fit)
+sqrt(car::vif(c_fit))
+pairs(formula=~eFG.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
+summary(c_fit)
+
+```
+
+
+```{r}
+ggplot(pf,aes(x=eFG., y=log(salary)))+
+  geom_point(alpha=0.5,color='darkgreen')+
+  geom_smooth(method='lm')
+```
+
+
+
