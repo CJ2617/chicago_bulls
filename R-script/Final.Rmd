@@ -1,47 +1,220 @@
 ---
-title: "10157_Final"
+title: "Chicago Bulls Analysation"
 author: "Jie Cai"
 date: "`r Sys.Date()`"
 output: html_document
 ---
-# Overview
-----------
+# Overview / Background
+Basketball is a team sport, which was invented by james naismith in 1891. The concept of basketball came from other sports, such as football, hockey and American football, and the limitation of weather. Basketball was originally an indoor sport, with nine players on each team, which enabled people to play indoors in cold winter.
+Basketball has slowly become popular in the US and played as an informal outdoor game in some areas. Today, basketball has become one of the most famous and popular sports in the world. The National Basketball Association (NBA) is not only a professional basketball league in the United States, but also a dream place for most basketball players.
+
+# Aim
+Since we recently gathered many young players, the average age of our team is 24. In such a young team, there are many opportunities to cultivate our players into the best players in the league. We can also fill in some new faces and add some experienced players to our team. Their experiences, skills and views can benefit our team and produce good team chemistry effect.
+
+This analysis mainly focuses on finding out the limitations and shortcomings of our team and the differences between us and other teams. The analysis of players in the whole league is also carried out in this analysis. According to our current salary budget, find out some potential players suitable for our team, and optimize the expenditure according to the skills of the players. Hope those changes can help the team to move forward and aim for better ranking in the next season. 
 
 
+# Data
 
+There are 4 datasets been used in this analysis:
+  - 2018-19_nba_player-statistics
+  - 2018-19_nba_player-salaries
+  - 2018-19_nba_team-payroll
+  - 2018-19_nba_team-statistics_2
 
+The salaries data and payroll data were obtained from Hoopshype website, and the player statistics and team satatistic data were found from the Basketball-Reference site. 
+
+The variables used in the alaysis are:
+  2018-19_nba_player-statistics.csv  
+  - player_name : Player Name
+  - Pos :  (PG = point guard, SG = shooting guard, SF = small forward, PF = power             forward, C = center) 
+  - Age : Age of Player at the start of February 1st of that season.
+  - Tm : Team
+  - G: Games
+  - MP : Minutes Played
+  - FG : Field Goals
+  - FGA : Field Goal Attempts
+  - FG. : Field Goal Percentage
+  - X3P : 3-Point Field Goals
+  - X3PA : 3-Point Field Goal Attempts
+  - X3P. : FG% on 3-Pt FGAs
+  - X2P : 2-Point Field Goals
+  - X2PA : 2-point Field Goal Attempts
+  - X2P. : FG% on 2-Pt FGAs
+  - FT : Free Throws
+  - FTA : Free Throw Attempts
+  - FT. : Free Throw Percentage
+  - ORB : Offensive Rebounds
+  - DRB : Defensive Rebounds
+  - TRB : Total Rebounds
+  - AST : Assists
+  - STL : Steals
+  - BLK : Blocks
+  - TOV : Turnovers
+  - PF : Personal Fouls
+  - PTS : Points
+  
+  2018-19_nba_team-statistics_2:
+  - Rk: Ranking
+  - Team: Team Name
+  - G: Games
+  - MP : Minutes Played
+  - FG : Field Goals
+  - FGA : Field Goal Attempts
+  - FG. : Field Goal Percentage
+  - X3P : 3-Point Field Goals
+  - X3PA : 3-Point Field Goal Attempts
+  - X3P. : FG% on 3-Pt FGAs
+  - X2P : 2-Point Field Goals
+  - X2PA : 2-point Field Goal Attempts
+  - X2P. : FG% on 2-Pt FGAs
+  - FT : Free Throws
+  - FTA : Free Throw Attempts
+  - FT. : Free Throw Percentage
+  - ORB : Offensive Rebounds
+  - DRB : Defensive Rebounds
+  - TRB : Total Rebounds
+  - AST : Assists
+  - STL : Steals
+  - BLK : Blocks
+  - TOV : Turnovers
+  - PF : Personal Fouls
+  - PTS : Points
+  
+  2018-19_nba_player-salaries:
+  - player_id : unique player identification number
+  - player_name : player name
+  - salary : year salary in $USD
+
+  2018-19_nba_team-payroll:
+  - team_id : unique team identification number
+  - team : team name
+  - salary : team payroll budget in 2019-20 in $USD
+  
+Notes, all the "%" has been replaced by "." in dataset.
+# Analysis:
+
+## Reading data:
 ```{r}
 library(tidyverse)
 library(broom)
 salaries_1819 <- read.csv("2018-19_nba_player-salaries.csv")
 player_1819 <- read.csv("2018-19_nba_player-statistics.csv")
-team1 <- read.csv("2018-19_nba_team-statistics_1.csv")
-team2 <- read.csv("2018-19_nba_team-statistics_2.csv")
+team_1819 <- read.csv("2018-19_nba_team-statistics_2.csv")
 payroll_1920 <- read.csv("2019-20_nba_team-payroll.csv")
 ```
-# combine data player and salaries
+
+## Finding NA
+```{r}
+sum(is.na(salaries_1819))
+sum(is.na(player_1819))
+sum(is.na(team_1819))
+sum(is.na(payroll_1920))
+
+```
+
+
+## Analysis difference between others and Chicago Bulls
+
+By comparing the statistical data between us and others, we can find out what the weaknesses are and try to improve them. By comparing, we can also see what we are good at and stick to it.
+
+Find the average value for all variables and compare it with the data of our team.
+A new data set has been created, which only containing team rankings from 24 to 27. This dataset may help to find out what are the most significant factors that we need to focus on in order to help with our ranking next season.
+
+## Tidy the team dataset
+In the team dataset, there are few variables, such as 3P, 3PA and 3P. can cause multicollinearity, due to the relationship among the variables. In order to prevent multicollinearity, the rate variables, such as FG.XP3., XP2.,FT. were been used and their related varaibles （FG,FGA, 3P, X3PA, X2, X2PA, FT, FTA) are been removed. Variable G (Game) and MP (Minutes played) also been removed, as those varaibels are almost the same for all the team, thus not significant to the data analysis.
+
+```{r}
+team <- team_1819%>%
+  select(c("Rk","Team","FG.","X3P.","X2P.","FT.","TRB", "AST","STL","BLK","TOV","PF"))
+
+chi_team1 <- team[27,-1] %>%  pivot_longer(
+  cols = !Team, 
+  names_to = "chi_data", 
+  values_to = "chi_result")
+
+mean_data <- team%>%mutate(team="team",mean(FG.),mean(X3P.),
+                           mean(X2P.),mean(FT.), mean(TRB), mean(AST),
+                           mean(STL),mean(BLK),  mean(TOV), mean(PF))
+
+mean_data <- tibble(mean_data[1,13:23])
+mean_data <- mean_data %>%  pivot_longer(
+  cols = !team, 
+  names_to = "mean", 
+  values_to = "result")
+mean_data$result <-round(mean_data$result,digits = 3)
+comp <- chi_team1%>%mutate(mean_result=mean_data$result)
+comp <- comp%>%mutate(diff=chi_result-mean_result)
+comp
+write_csv(comp,file="modified_dataset/chicago vs league mean.csv")
+```
+The result of comp data set show that Chicago Bulls have reached the average level on field goals, 3 points field goals, 2 points field goals and free throw. This means that our shooting skills has reached at least the average level of the whole league. But, apart from the shooting skill, defense skill and personal skill are far away from the average range. Since rebounding and assists are our main weaknesses, we will mainly focus on finding some players who are good at this field to join our team. We also need to work on stealing and blocking skill. Do more footwork and passing skill to reduce turnover and personal fouls.
+
+## Team data comparision between rank 26 to rank 27
+```{r}
+team_26 <- team[26,-1] %>%pivot_longer(
+  cols = !Team, 
+  names_to = "data", 
+  values_to = "result")
+rk24_26 <- chi_team1%>%mutate(diff_rk2627=chi_result-team_26$result)
+
+team_25 <- team[25,-1] %>%pivot_longer(
+  cols = !Team, 
+  names_to = "data", 
+  values_to = "result")
+rk24_26 <- rk24_26%>%mutate(diff_rk2527=chi_result-team_25$result)
+
+team_24 <- team[24,-1] %>%pivot_longer(
+  cols = !Team, 
+  names_to = "data", 
+  values_to = "result")
+rk24_26 <- rk24_26%>%mutate(diff_rk2427=chi_result-team_24$result)
+rk24_26
+```
+As the rk24_26 shows the comparision between Chicaogo Bulls (rk27) with teams rank from 24 to 26. The result also show that if Chicago Bulls want to move up by at least one place next season, we need to make more efforts in rebounding and assists.
+
+
+
+# Solving Rebounds and Assists Issue (Seek for suitable players)
+
+## combine data player and salaries
+By combining the player salaries date together with the players skills data, we can test the relationship between salaries and other factors, and thus we can figure out are more skilled player will obtain higher salaries, or the players' age may also affect the their salaries.
 ```{r}
 player <- left_join(player_1819,salaries_1819)
 levels(as.factor(player$Pos))
 ```
-# fina na
+
+## Fina missing value 'NA'
+since there are 161 missing value, 22 players have no player id and salary indicated. Thus, those players can be currently not in the league but do have talent. We may offer them a sound salary and place them as backup players.
+To prevent removed these potential player, all the NA value will be fill with '0' and create a no salaries dataset for those no salaries indicated players.
 ```{r}
 colnames(player)[apply(player, 2, anyNA)]
 colSums(is.na(player))
-#fill na = 0
+sum(is.na(player))
+#fill in NA value
 player[is.na(player)] <- 0
+no_salary <- filter(player, salary=="0")
 ```
+## Tidy dataset
+As some players might played for different teams, for these type of players, their total statistic data are stored in the row with team variables as TOT. To prevent duplicates analysis apply to these cross-team players, we are going to retain the row with TOT.
+After remove repeated players in the dataset. The playe dataset has been divided in to two dataset, one for players with salaries and the other dataset is for players with no salaries indicated. 
 
 ```{r}
-max(player$G)
+
 player_tot <- player[grepl('TOT', player$Tm),]
+
+no_salary<- no_salary[!(no_salary$player_name %in% player_tot$player_name),]
+no_salary <- filter(player_tot, salary=="0")%>%full_join(no_salary)
+
 player2 <- player[!(player$player_id %in% player_tot$player_id),]
 player <- full_join(player2,player_tot)
+
+write_csv(no_salary,file="modified_dataset/players with no_salary.csv")
+write_csv(player,file="modified_dataset/players with salary.csv")
+
 ```
 
-
-
-# devided into position
+As  Basketball  has 5 key positions, thus the player dataset has been divied in to 5 different dataset, each of them represent 1 position type. Some players play more than 1 position, in this case, they are been placed in more than 1 positions' dataset. Even though thay have been analysis more than 1 time, but since the multiple analysation are not conduce in same dataset, thus no negative effect. 
 ```{r}
 levels(as.factor(player$Pos))
 pg <- player[grepl('PG', player$Pos),]
@@ -49,50 +222,157 @@ sg<- player[grepl('SG', player$Pos),]
 sf<- player[grepl('SF', player$Pos),]
 pf<- player[grepl('PF', player$Pos),]
 cent <- player[grepl('C', player$Pos),]
-```
-# sort 
-```{r}
-cent <- c[order(cent$Age),]
-new_c <- cent%>%subset(select=c("FG.","X3P.","eFG.","FT.","TRB", "AST","STL","BLK","TOV","PF","salary"))
+write_csv(pg,file="modified_dataset/pg.csv")
+write_csv(sg,file="modified_dataset/sg.csv")
+write_csv(sf,file="modified_dataset/sf.csv")
+write_csv(pf,file="modified_dataset/pf.csv")
+write_csv(cent,file="modified_dataset/cent.csv")
 ```
 
-# multilinear, y=salary
+
+## Rebound and Assists
+Since the comparison tables shows Chicago Bulls has weakness on rebounds and assists. Finding good players with higher rebound and assist accross 5 different positions may help to solve the team weakness.
+Players data has a varaible name eFG., this variables could have multicollinearity relationship with FG. amd X3P., thus before finalise the center players data, the multicollinearity test is conducted
 ```{r}
-c_fit <- lm(log(salary)~., data=new_c)
-plot(c_fit)
-tidy(c_fit,coef.int=TRUE)
+#remove, multicollinearity varaiblescent
+c_fit <- lm(log(salary)~FG.+X3P.+eFG.+FT.+TRB+AST+STL+BLK+TOV+PF, data=cent)
+pairs(formula=~FG.+X3P.+eFG.+FT.+TRB+AST+STL+BLK+TOV+PF+salary,data=cent)
 car::avPlots(c_fit) # test linearity / covaraince
 sqrt(car::vif(c_fit))
-pairs(formula=~FG.+X3P.+eFG.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
 ```
+Both Scatter plot and vif test show that there are linear relationship between FG. and eFG. This is because eFG.is been calculated based on FG. and either X3P. or X2P.. Since X3P. doesn't have linear relationship with eFG. thus, we keep FG. instead eFG. to prevent lost of shooting data.
 
-# compare with fg + xp3 vs efg
+
+## Finding Center player
 ```{r}
-
-c_fit <- lm(log(salary)~FG.+X3P.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
-tidy(c_fit,coef.int=TRUE)
-car::avPlots(c_fit) # test linearity / covaraince
-car::vif(c_fit)
-sqrt(car::vif(c_fit))
-pairs(formula=~FG.+X3P.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
-summary(c_fit)
-
-c_fit <- lm(log(salary)~eFG.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
-tidy(c_fit,coef.int=TRUE)
-car::avPlots(c_fit) # test linearity / covaraince
-car::vif(c_fit)
-sqrt(car::vif(c_fit))
-pairs(formula=~eFG.+FT.+TRB+AST+STL+BLK+TOV+PF,data=new_c)
-summary(c_fit)
-
+#remove eFG.
+new_cent <- cent%>%subset(select=c("player_name","Tm","MP","FG.","X3P.","FT.","TRB", "AST","STL","BLK","TOV","PF","salary"))%>%arrange(desc(TRB))
+chi_cent <- new_cent[grepl('CHI', new_cent$Tm),]%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)
+chi_cent
 ```
-
+From the Chi_cent data frame, we can see that Robin Lopez who takes the highest salary within the center players, contributes second lowest number of rebounds. Cristiano Felicio has the lowest rebounds and assist out of three and the salary is sits at the middle range. But the total minute played by Crustiano is much less than others. Wendell Carter made much contribution on rebounds but he also made a lot personal fouls. By looking at above table comparision, it can be better for us to find one or two center player to replace some of our current players.
 
 ```{r}
-ggplot(pf,aes(x=eFG., y=log(salary)))+
-  geom_point(alpha=0.5,color='darkgreen')+
-  geom_smooth(method='lm')
+#set cent at mean value 
+cent_TRB <- filter(new_cent,TRB>mean(player$TRB),PF<mean(player$PF))%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)%>%
+  arrange(TRB)
+cent_TRB
+```
+```{r}
+#salary different 
+(14357750+8470980)-(1567007+17469565)
 ```
 
+Since our center player has high personal fouls, but also have high TRB out of the entire league, to pick someone to replace them, we need to pick people have low PF and high TRB. The cent_TRB table shows that there only 7 players have low PF with TRB above the mean TRB out of entire Leauge. 
+By looking at cent_TRB table, it will be a good idea to replace Robin Lope and Cristiano Felicio with Jahlil Okafor and Tristan Thompson. Both Jahlil and Tristan have low PF and high TRB. The only disadvantage for this replacement is the number foor Blk is reduced, however, this can be top up by other players. Also this replacement can help the team to save nearly380k, and this 380k can use to find other players with good blocking skill. 
 
+Thus the replacement among Robin Lope and Cristiano Felicio with Jahlil Okafor and Tristan Thompson can be a good decision.
+
+
+## Finding point guard
+```{r}
+new_pg <- pg%>%subset(select=c("player_name","Tm","MP","FG.","X3P.","FT.","TRB", "AST","STL","BLK","TOV","PF","salary"))%>%arrange(desc(AST))
+chi_pg <- new_pg[grepl('CHI', new_pg$Tm),]%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)
+chi_pg
+```
+The chi_pg table shows Kris Dunn has highest AST and TOV out of four point guard, he also highest salary among the point guard. In order to find replacement, we need to find someone has similary skill record as Kris, but lower salary, or bette skill with slighly higher salary.
+
+
+```{r}
+pg_AST <- filter(new_pg,TRB>200,AST>300,salary<4500000)%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)%>%
+  arrange(AST)
+pg_AST
+```
+By comparing table pg_AST and chi_pg, it can be a good idea to replace Kris, Shaquille and Tyler with Elfrid and Jamal. 
+
+```{r}
+#salary different:
+(4221000+1325531+77250-3000000-3499800)+3792158
+```
+
+## Finding shoot guard
+```{r}
+new_sg <- sg%>%subset(select=c("player_name","Tm","MP","FG.","X3P.","FT.","TRB", "AST","STL","BLK","TOV","PF","salary"))%>%arrange(desc(AST))
+chi_sg <- new_sg[grepl('CHI', new_sg$Tm),]%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)
+chi_sg
+```
+The chi_sg table shows Zach LaVine who takes highest salary has similar skill results as Kris. In this case, we may replace Zach with better skill or similar skill but lower salary wanted.
+
+```{r}
+sg_AST <- filter(new_sg,TRB>250,AST>300,salary<15000000)%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)%>%
+  arrange(AST)
+sg_AST
+```
+Using Zach to changed Dwyane, Donovan Luka, Dand Devin  can be a good idea, not only AST skill increase,TRB and BLK also increase. TOV and PF may remain the same. These fow shoot guard can also play as point guard.
+```{r}
+#salary different:
+(19500000-2393887-3111480-6569040-3314365)+2916139
+```
+## Finding small forward and power forward
+```{r}
+new_sf <- sf%>%subset(select=c("player_name","Tm","MP","FG.","X3P.","FT.","TRB", "AST","STL","BLK","TOV","PF","salary"))
+chi_sf <- new_sf[grepl('CHI', new_sf$Tm),]%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)
+chi_sf
+```
+```{r}
+sf_AT <- filter(new_sf,TRB>mean(player$TRB),AST>mean(player$AST),salary<(1991520+7027367))%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)
+sf_AT
+```
+As our small forward players do not look nice, the data a less than league mean, thus picking player based on the league mean.
+By looking at the sf_AT table, Cedi, Royce and Justise could be our potiential player. But before picking them, the analysis on power forward may needed.
+
+
+```{r}
+new_pf <- pf%>%subset(select=c("player_name","Tm","MP","FG.","X3P.","FT.","TRB", "AST","STL","BLK","TOV","PF","salary"))
+chi_pf <- new_pf[grepl('CHI', new_pf$Tm),]%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)
+chi_pf
+```
+```{r}
+pf_AT <- filter(new_pf,TRB>mean(player$TRB),AST>mean(player$AST),salary<5000000)%>%
+  select(player_name,MP,TRB,AST,BLK,TOV,PF,salary)
+pf_AT
+```
+Comparing between our team power forward and the selected power forward, retain our small forward Chandler and add in Justise Winslow. Changing our power forward to Noah and Dario. 
+
+## Payroll changes
+```{r}
+(14357750+8470980)-(1567007+17469565)+(4221000+1325531+77250-3000000-3499800)+(
+19500000-2393887-3111480-6569040-3314365)-3448926+(4536120-1621415-2526840)
+```
+Since there is still 396k extra, we may go for 1 more forward, either Jeff Green, Royce O'Neale or Cedi Osman
+
+
+# Conclusion
+After the analysis among 5 different positions and team data, there are number of changing players in the next season. 
+
+Those players are:
+
+Center:
+  -Robin Lope to by Jahlil Okafor
+  - Cristiano Felicio to Tristan Thompson
+  
+Point Guard:
+  - Kris Dunn to Elfrid Payton
+  - Shaquille Harrison to Jamal Murray
+
+Shoot Guard
+  -Zach LaVine to Dwyane Wade	+ Donovan Mitchell	+ Luka Doncic	+ Devin Booker
+
+
+Small Forward
+  - add in Justise Winslow
+
+Power Forward
+  - change Lauri Markkanen to Noah Vonleh + Dario Saric 
+
+Since there is 396k extra after the above exchange player, we may either use it for team development or find 1 more forward player (either Jeff Green, Royce O'Neale or Cedi Osman).
 
