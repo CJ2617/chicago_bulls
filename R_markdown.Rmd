@@ -1,6 +1,6 @@
 ---
 title: "Chicago Bulls Analysation"
-author: "Jie Cai"
+author: "Jie Cai u3242623"
 date: "`r Sys.Date()`"
 output:
   html_document: default
